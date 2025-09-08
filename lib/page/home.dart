@@ -1,6 +1,7 @@
 //home.dart
 import 'package:flutter/material.dart';
 import 'package:myapp/page/detail.dart';
+import 'package:get/get.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -16,15 +17,13 @@ class _MyHomePageState extends State<MyHomePage> {
   String _imagePath = 'images/logo.jpg';
 
   void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-    // create and push new instance of Detail page
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const Detail()),
-    );
-  }
+  setState(() {
+    _counter++;
+  });
+
+  // ใช้ GetX เปลี่ยนหน้า พร้อมส่งค่าตัวนับไปด้วย
+  Get.to(() => const Detail(), arguments: _counter);
+}
 
   void setImagePath(String path) {
     setState(() {

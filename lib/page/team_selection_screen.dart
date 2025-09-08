@@ -1,7 +1,9 @@
+// team_selection_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:myapp/controller/team_controller.dart';
 import 'package:myapp/model/pokemon_model.dart';
+import 'package:myapp/page/saved_teams_screen.dart'; // เพิ่ม import
 
 class TeamSelectionScreen extends StatelessWidget {
   TeamSelectionScreen({super.key});
@@ -11,20 +13,27 @@ class TeamSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Set the initial text for the team name editor
     textController.text = controller.teamName.value;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Wrap the title in Obx to make it reactive
         title: Obx(
           () => Text(controller.teamName.value),
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.view_list),
+            onPressed: () => Get.to(() => SavedTeamsScreen()),
+            tooltip: 'View Saved Teams',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => controller.resetTeam(),
+            onPressed: () {
+              controller.resetTeam();
+              // เพิ่มบรรทัดนี้เพื่อรีเซ็ต TextField ด้วยเมื่อกด refresh
+              textController.text = controller.teamName.value;
+            },
             tooltip: 'Reset Team',
           ),
         ],
@@ -37,6 +46,27 @@ class TeamSelectionScreen extends StatelessWidget {
             const SizedBox(height: 10),
             _buildSelectedTeamDisplay(),
             const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.save),
+                label: const Text('Save Team'),
+                onPressed: () {
+                  // --- ส่วนที่แก้ไข ---
+                  // 1. เรียกใช้ฟังก์ชันบันทึกเหมือนเดิม
+                  controller.saveFinalTeam();
+                  // 2. สั่งให้ TextField อัปเดตเป็นค่าล่าสุด (ที่ถูกรีเซ็ตแล้ว)
+                  textController.text = controller.teamName.value;
+                  // --- จบส่วนที่แก้ไข ---
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  textStyle: const TextStyle(fontSize: 16),
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
             _buildSearchBar(),
             const SizedBox(height: 10),
             _buildPokemonGrid(),
@@ -45,7 +75,8 @@ class TeamSelectionScreen extends StatelessWidget {
       ),
     );
   }
-
+  
+  // ... โค้ดส่วน `_build...` ที่เหลือเหมือนเดิมทั้งหมด ...
   Widget _buildTeamEditor() {
     return TextField(
       controller: textController,
@@ -59,6 +90,7 @@ class TeamSelectionScreen extends StatelessWidget {
   }
 
   Widget _buildSelectedTeamDisplay() {
+    // ... no changes ...
     return Obx(
       () => Container(
         height: 100,
@@ -91,6 +123,7 @@ class TeamSelectionScreen extends StatelessWidget {
   }
 
   Widget _buildSearchBar() {
+    // ... no changes ...
     return TextField(
       decoration: const InputDecoration(
         labelText: 'Search Pokémon',
@@ -102,8 +135,8 @@ class TeamSelectionScreen extends StatelessWidget {
   }
 
   Widget _buildPokemonGrid() {
+    // ... no changes ...
     return Expanded(
-      // Obx listens to changes in controller variables and rebuilds the widget
       child: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
@@ -126,63 +159,67 @@ class TeamSelectionScreen extends StatelessWidget {
   }
 
   Widget _buildPokemonCard(Pokemon pokemon) {
-  return Obx(
-    () {
-      final isSelected = controller.selectedTeam.contains(pokemon);
-      return GestureDetector(
-        onTap: () => controller.selectPokemon(pokemon),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200), // ความเร็วของ animation
-          curve: Curves.easeInOut, // รูปแบบการเคลื่อนไหว
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: isSelected ? Colors.blue.withOpacity(0.5) : Colors.black.withOpacity(0.1),
-                blurRadius: 5,
-                spreadRadius: 1,
-              )
-            ],
-            border: Border.all(
-              color: isSelected ? Colors.blueAccent : Colors.grey.shade200,
-              width: 2,
+    // ... no changes ...
+    return Obx(
+      () {
+        final isSelected = controller.selectedTeam.contains(pokemon);
+        return GestureDetector(
+          onTap: () => controller.selectPokemon(pokemon),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: isSelected
+                      ? Colors.blue.withOpacity(0.5)
+                      : Colors.black.withOpacity(0.1),
+                  blurRadius: 5,
+                  spreadRadius: 1,
+                )
+              ],
+              border: Border.all(
+                color: isSelected ? Colors.blueAccent : Colors.grey.shade200,
+                width: 2,
+              ),
+            ),
+            transform: isSelected
+                ? (Matrix4.identity()..scale(1.05))
+                : Matrix4.identity(),
+            child: Stack(
+              children: [
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.network(pokemon.imageUrl,
+                          height: 70, width: 70, fit: BoxFit.cover),
+                      const SizedBox(height: 8),
+                      Text(
+                        pokemon.name.capitalizeFirst!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: isSelected ? 1.0 : 0.0,
+                  child: const Positioned(
+                    top: 4,
+                    right: 4,
+                    child:
+                        Icon(Icons.check_circle, color: Colors.blueAccent),
+                  ),
+                ),
+              ],
             ),
           ),
-          // ทำให้การ์ดขยายใหญ่ขึ้นเล็กน้อยเมื่อถูกเลือก
-          transform: isSelected ? (Matrix4.identity()..scale(1.05)) : Matrix4.identity(),
-          child: Stack(
-            children: [
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.network(pokemon.imageUrl,
-                        height: 70, width: 70, fit: BoxFit.cover),
-                    const SizedBox(height: 8),
-                    Text(
-                      pokemon.name.capitalizeFirst!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              // ทำให้ไอคอน Check ค่อยๆ ปรากฏและหายไป
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: isSelected ? 1.0 : 0.0,
-                child: const Positioned(
-                  top: 4,
-                  right: 4,
-                  child: Icon(Icons.check_circle, color: Colors.blueAccent),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 }
